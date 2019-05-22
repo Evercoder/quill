@@ -35,4 +35,4 @@ cd ..
 npm version $VERSION
 git push origin mquill
 
-npm publish --access=restricted
+npm publish --access public
