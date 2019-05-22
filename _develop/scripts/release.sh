@@ -32,8 +32,7 @@ find quill/examples -type f -exec sed -i "" 's/href="\/\//href="https:\/\//g' {}
 find quill/examples -type f -exec sed -i "" 's/src="\/\//src="https:\/\//g' {} \;
 
 cd ..
-git tag v$VERSION -m "Version $VERSION"
-git push origin v$VERSION
-git push origin master
+npm version $VERSION
+git push origin mquill
 
 npm publish --access=restricted
