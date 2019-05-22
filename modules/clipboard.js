@@ -18,21 +18,6 @@ let debug = logger('quill:clipboard');
 
 const DOM_KEY = '__ql-matcher';
 
-const CLIPBOARD_CONFIG = [
-  [Node.TEXT_NODE, matchText],
-  [Node.TEXT_NODE, matchNewline],
-  ['br', matchBreak],
-  [Node.ELEMENT_NODE, matchNewline],
-  [Node.ELEMENT_NODE, matchBlot],
-  [Node.ELEMENT_NODE, matchSpacing],
-  [Node.ELEMENT_NODE, matchAttributor],
-  [Node.ELEMENT_NODE, matchStyles],
-  ['li', matchIndent],
-  ['b', matchAlias.bind(matchAlias, 'bold')],
-  ['i', matchAlias.bind(matchAlias, 'italic')],
-  ['style', matchIgnore]
-];
-
 const ATTRIBUTE_ATTRIBUTORS = [
   AlignAttribute,
   DirectionAttribute
@@ -62,7 +47,20 @@ class Clipboard extends Module {
     this.container.setAttribute('contenteditable', true);
     this.container.setAttribute('tabindex', -1);
     this.matchers = [];
-    CLIPBOARD_CONFIG.concat(this.options.matchers).forEach(([selector, matcher]) => {
+    [
+      [Node.TEXT_NODE, matchText],
+      [Node.TEXT_NODE, matchNewline],
+      ['br', matchBreak],
+      [Node.ELEMENT_NODE, matchNewline],
+      [Node.ELEMENT_NODE, mQmatchBlot(options.ALLOWED_TAGS)],
+      [Node.ELEMENT_NODE, matchSpacing],
+      [Node.ELEMENT_NODE, mQmatchAttributor],
+      [Node.ELEMENT_NODE, matchStyles],
+      ['li', matchIndent],
+      ['b', matchAlias.bind(matchAlias, 'bold')],
+      ['i', matchAlias.bind(matchAlias, 'italic')],
+      ['style', matchIgnore]
+    ].concat(this.options.matchers).forEach(([selector, matcher]) => {
       if (!options.matchVisual && matcher === matchSpacing) return;
       this.addMatcher(selector, matcher);
     });
@@ -77,6 +75,7 @@ class Clipboard extends Module {
       this.container.innerHTML = html.replace(/\>\r?\n +\</g, '><'); // Remove spaces between tags
       return this.convert();
     }
+
     const formats = this.quill.getFormat(this.quill.selection.savedRange.index);
     if (formats[CodeBlock.blotName]) {
       const text = this.container.innerText;
@@ -105,21 +104,65 @@ class Clipboard extends Module {
     }
   }
 
+  mQclearOutExternalStyles(delta) {
+    delta.ops = delta.ops.map((op) => {
+      if (!op.attributes) return op;
+      if (op.attributes.background && !op.attributes.background.match(/--mq-txt-color/)) {
+        op.attributes.background = '';
+      }
+
+      if (op.attributes.color && !op.attributes.color.match(/--mq-txt-color/)) {
+        op.attributes.color = '';
+      }
+
+      return op;
+    });
+
+    return delta;
+  }
+
+  mQdeltaKeepCurrentFormat(delta) {
+    const currentFormat = this.quill.getFormat();
+
+    delta.ops = delta.ops.map((op) => {
+      if (op.insert) {
+        op.attributes = Object.assign({}, op.attributes, currentFormat);
+      }
+
+      return op;
+    });
+
+    return delta;
+  }
+
   onPaste(e) {
     if (e.defaultPrevented || !this.quill.isEnabled()) return;
-    let range = this.quill.getSelection();
+    const range = this.quill.getSelection(true);
+    e.preventDefault();
+
+    const formats = this.quill.getFormat(this.quill.selection.savedRange.index || 0);
+    const text = e.clipboardData.getData('text/plain');
+
+    let html = e.clipboardData.getData('text/html');
     let delta = new Delta().retain(range.index);
-    let scrollTop = this.quill.scrollingContainer.scrollTop;
-    this.container.focus();
-    this.quill.selection.update(Quill.sources.SILENT);
-    setTimeout(() => {
-      delta = delta.concat(this.convert()).delete(range.length);
-      this.quill.updateContents(delta, Quill.sources.USER);
-      // range.length contributes to delta.length()
-      this.quill.setSelection(delta.length() - range.length, Quill.sources.SILENT);
-      this.quill.scrollingContainer.scrollTop = scrollTop;
-      this.quill.focus();
-    }, 1);
+    if (formats[CodeBlock.blotName]) {
+      delta.insert(text, {
+        [CodeBlock.blotName]: formats[CodeBlock.blotName]
+      });
+    } else if (html) {
+      // Clear out external formats so we don't paste something that wasn't intended see
+      const pasteDelta = this.mQclearOutExternalStyles(this.convert(html));
+      delta = delta.concat(pasteDelta);
+    } else if (text) {
+      // Paste as plain text: should blend in with the current format
+      delta.insert(text);
+      this.mQdeltaKeepCurrentFormat(delta);
+    }
+    delta.delete(range.length);
+
+    this.quill.updateContents(delta, Quill.sources.USER);
+    this.quill.setSelection(delta.length() - range.length, Quill.sources.SILENT);
+    this.quill.scrollIntoView();
   }
 
   prepareMatching() {
@@ -242,6 +285,34 @@ function matchAttributor(node, delta) {
     delta = applyFormat(delta, formats);
   }
   return delta;
+}
+
+function mQmatchAttributor(node, delta) {
+  let attributes = Parchment.Attributor.Attribute.keys(node);
+  let styles = Parchment.Attributor.Style.keys(node);
+  let formats = {};
+  attributes.concat(styles).forEach((name) => {
+    let attr = Parchment.query(name, Parchment.Scope.ATTRIBUTE);
+    if (attr != null) {
+      formats[attr.attrName] = attr.value(node);
+      if (formats[attr.attrName]) return;
+    }
+    attr = ATTRIBUTE_ATTRIBUTORS[name];
+    if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+      formats[attr.attrName] = attr.value(node) || undefined;
+    }
+  });
+  if (Object.keys(formats).length > 0) {
+    delta = applyFormat(delta, formats);
+  }
+  return delta;
+}
+
+function mQmatchBlot(ALLOWED_TAGS) {
+  return function(node, delta) {
+     if (!ALLOWED_TAGS.includes(node.tagName.toLowerCase())) return delta;
+     return matchBlot(node, delta);
+  };
 }
 
 function matchBlot(node, delta) {
