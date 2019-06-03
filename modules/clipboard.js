@@ -308,7 +308,7 @@ function mQmatchAttributor(node, delta) {
   return delta;
 }
 
-function mQmatchBlot(ALLOWED_TAGS) {
+function mQmatchBlot(ALLOWED_TAGS = []) {
   return function(node, delta) {
      if (!ALLOWED_TAGS.includes(node.tagName.toLowerCase())) return delta;
      return matchBlot(node, delta);
