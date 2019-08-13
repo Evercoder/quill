@@ -140,7 +140,7 @@ Keyboard.keys = {
 
 Keyboard.DEFAULTS = {
   bindings: {
-    'bold'      : makeFormatHandler('bold'),
+    // 'bold'      : makeFormatHandler('bold'),
     'italic'    : makeFormatHandler('italic'),
     'underline' : makeFormatHandler('underline'),
     'indent': {
