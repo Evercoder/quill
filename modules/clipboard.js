@@ -405,7 +405,7 @@ function matchText(node, delta) {
   if (text.trim().length === 0 && node.parentNode.classList.contains('ql-clipboard')) {
     return delta;
   }
- 
+
   return delta.insert(text);
 }
 
