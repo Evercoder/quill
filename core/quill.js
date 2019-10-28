@@ -164,6 +164,26 @@ class Quill {
     }, source);
   }
 
+  // Same as format() but we don't force the selection back on the root node
+  silentFormat(name, value) {
+     return modify.call(this, () => {
+      let range = this.getSelection();
+      let change = new Delta();
+      if (range == null) {
+        return change;
+      } else if (Parchment.query(name, Parchment.Scope.BLOCK)) {
+        change = this.editor.formatLine(range.index, range.length, { [name]: value });
+      } else if (range.length === 0) {
+        this.selection.format(name, value);
+        return change;
+      } else {
+        change = this.editor.formatText(range.index, range.length, { [name]: value });
+      }
+
+      return change;
+    }, Emitter.sources.SILENT);
+  }
+
   formatLine(index, length, name, value, source) {
     let formats;
     [index, length, formats, source] = overload(index, length, name, value, source);
@@ -242,7 +262,8 @@ class Quill {
   getSelection(focus = false) {
     if (focus) this.focus();
     this.update();  // Make sure we access getRange with editor in consistent state
-    return this.selection.getRange()[0];
+
+    return focus ? this.selection.getRange()[0] : this.selection.savedRange;
   }
 
   getText(index = 0, length = this.getLength() - index) {
@@ -442,7 +463,11 @@ function modify(modifier, source, index, shift) {
     } else if (shift !== 0) {
       range = shiftRange(range, index, shift, source);
     }
-    this.setSelection(range, Emitter.sources.SILENT);
+
+    if (source !== Emitter.sources.SILENT) {
+      this.setSelection(range, Emitter.sources.SILENT);
+    }
+
   }
   if (change.length() > 0) {
     let args = [Emitter.events.TEXT_CHANGE, change, oldDelta, source];
