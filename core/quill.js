@@ -464,9 +464,9 @@ function modify(modifier, source, index, shift) {
       range = shiftRange(range, index, shift, source);
     }
 
-    if (source !== Emitter.sources.SILENT) {
-      this.setSelection(range, Emitter.sources.SILENT);
-    }
+    // if (source !== Emitter.sources.SILENT) {
+    //   this.setSelection(range, Emitter.sources.SILENT);
+    // }
 
   }
   if (change.length() > 0) {
