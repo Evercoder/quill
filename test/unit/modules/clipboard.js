@@ -2,6 +2,11 @@ import Delta from 'quill-delta';
 import { Range } from '../../../core/selection';
 import Quill from '../../../core';
 
+const noop = () => {};
+const fakeEvent = {
+  preventDefault: noop,
+  clipboardData: { getData: () => '' }
+};
 
 describe('Clipboard', function() {
   describe('events', function() {
@@ -12,7 +17,12 @@ describe('Clipboard', function() {
 
     it('paste', function(done) {
       this.quill.clipboard.container.innerHTML = '<strong>|</strong>';
-      this.quill.clipboard.onPaste({});
+      this.quill.clipboard.onPaste({
+        preventDefault: noop,
+        clipboardData: {
+          getData: () => '<strong>|</strong>'
+        }
+      });
       setTimeout(() => {
         expect(this.quill.root).toEqualHTML('<p>01<strong>|</strong><em>7</em>8</p>');
         expect(this.quill.getSelection()).toEqual(new Range(3));
@@ -27,7 +37,7 @@ describe('Clipboard', function() {
       spyOn(handler, 'change');
       this.quill.on('selection-change', handler.change);
       this.quill.clipboard.container.innerHTML = '0';
-      this.quill.clipboard.onPaste({});
+      this.quill.clipboard.onPaste(fakeEvent);
       setTimeout(function() {
         expect(handler.change).not.toHaveBeenCalled();
         done();
@@ -44,14 +54,6 @@ describe('Clipboard', function() {
     it('plain text', function() {
       let delta = this.clipboard.convert('simple plain text');
       expect(delta).toEqual(new Delta().insert('simple plain text'));
-    });
-
-    it('whitespace', function() {
-      let html =
-        '<div> 0 </div><div> <div> 1 2 <span> 3 </span> 4 </div> </div>' +
-        '<div><span>5 </span><span>6 </span><span> 7</span><span> 8</span></div>';
-      let delta = this.clipboard.convert(html);
-      expect(delta).toEqual(new Delta().insert('0\n1 2  3  4\n5 6  7 8'));
     });
 
     it('inline whitespace', function() {

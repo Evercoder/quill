@@ -106,7 +106,32 @@ function initialize(klass, html, container = this.container) {
     container.innerHTML = html.replace(/\n\s*/g, '');
   }
   if (klass === HTMLElement) return container;
-  if (klass === Quill) return new Quill(container);
+  if (klass === Quill) return new Quill(container, {
+      modules: {
+        clipboard: {
+          ALLOWED_TAGS: [
+          'em',
+          'br',
+          'b',
+          'strong',
+          'ul',
+          'li',
+          'ol',
+          'a',
+          'u',
+          'p',
+          'i',
+          'span',
+          'strike',
+          's',
+          'span',
+          'video',
+          'img',
+          'iframe'
+        ]
+      }
+    }
+  });
   let emitter = new Emitter();
   let scroll = new Scroll(container, { emitter: emitter });
   if (klass === Scroll) return scroll;

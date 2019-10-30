@@ -167,7 +167,7 @@ class Quill {
   // Same as format() but we don't force the selection back on the root node
   silentFormat(name, value) {
      return modify.call(this, () => {
-      let range = this.getSelection();
+      let range = this.getSavedSelection();
       let change = new Delta();
       if (range == null) {
         return change;
@@ -263,7 +263,12 @@ class Quill {
     if (focus) this.focus();
     this.update();  // Make sure we access getRange with editor in consistent state
 
-    return focus ? this.selection.getRange()[0] : this.selection.savedRange;
+    return this.selection.getRange()[0];
+  }
+
+  getSavedSelection() {
+    this.update();
+    return this.selection.savedRange;
   }
 
   getText(index = 0, length = this.getLength() - index) {
@@ -464,9 +469,9 @@ function modify(modifier, source, index, shift) {
       range = shiftRange(range, index, shift, source);
     }
 
-    // if (source !== Emitter.sources.SILENT) {
-    //   this.setSelection(range, Emitter.sources.SILENT);
-    // }
+    if (source !== Emitter.sources.SILENT) {
+      this.setSelection(range, Emitter.sources.SILENT);
+    }
 
   }
   if (change.length() > 0) {
