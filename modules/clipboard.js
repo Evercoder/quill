@@ -289,9 +289,10 @@ function matchAttributor(node, delta) {
 
 function mQmatchAttributor(node, delta) {
   let attributes = Parchment.Attributor.Attribute.keys(node);
+  let classes = Parchment.Attributor.Class.keys(node);
   let styles = Parchment.Attributor.Style.keys(node);
   let formats = {};
-  attributes.concat(styles).forEach((name) => {
+  attributes.concat(classes).concat(styles).forEach((name) => {
     let attr = Parchment.query(name, Parchment.Scope.ATTRIBUTE);
     if (attr != null) {
       formats[attr.attrName] = attr.value(node);
