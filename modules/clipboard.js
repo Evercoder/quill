@@ -104,23 +104,6 @@ class Clipboard extends Module {
     }
   }
 
-  mQclearOutExternalStyles(delta) {
-    delta.ops = delta.ops.map((op) => {
-      if (!op.attributes) return op;
-      if (op.attributes.background && !op.attributes.background.match(/--mq-txt-color/)) {
-        op.attributes.background = '';
-      }
-
-      if (op.attributes.color && !op.attributes.color.match(/--mq-txt-color/)) {
-        op.attributes.color = '';
-      }
-
-      return op;
-    });
-
-    return delta;
-  }
-
   mQdeltaKeepCurrentFormat(delta) {
     const currentFormat = this.quill.getFormat();
 
@@ -150,8 +133,7 @@ class Clipboard extends Module {
         [CodeBlock.blotName]: formats[CodeBlock.blotName]
       });
     } else if (html) {
-      // Clear out external formats so we don't paste something that wasn't intended see
-      const pasteDelta = this.mQclearOutExternalStyles(this.convert(html));
+      const pasteDelta = this.convert(html);
       delta = delta.concat(pasteDelta);
     } else if (text) {
       // Paste as plain text: should blend in with the current format
