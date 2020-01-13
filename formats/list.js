@@ -89,8 +89,27 @@ class List extends Container {
     return { [this.statics.blotName]: this.statics.formats(this.domNode) };
   }
 
+  mqUpdateBulletColor(blot) {
+    if (blot.domNode.children.length) {
+        const color = blot.domNode.children[0].style.color;
+        const allChildrenHaveSameColor = [...blot.domNode.children].every(
+          (child) => child.style.color === color
+        );
+
+        if (allChildrenHaveSameColor) {
+          blot.domNode.style.color = color;
+        } else {
+          blot.domNode.style.removeProperty('color');
+        }
+      }
+  }
+
   insertBefore(blot, ref) {
     if (blot instanceof ListItem) {
+
+      // This runs whenever the nodes get reconstructed (e.g. entering edit mode)
+      this.mqUpdateBulletColor(blot);
+
       super.insertBefore(blot, ref);
     } else {
       let index = ref == null ? this.length() : ref.offset(this);
