@@ -9,9 +9,15 @@ import clone from 'clone';
 import equal from 'deep-equal';
 import extend from 'extend';
 
-
 const ASCII = /^[ -~]*$/;
 
+function unique(arr) {
+  return Array.from(new Set(arr));
+}
+
+function flatten(arrayOfArrays) {
+  return Array.prototype.concat.apply([], arrayOfArrays);
+}
 
 class Editor {
   constructor(scroll) {
@@ -139,6 +145,45 @@ class Editor {
       return formats;
     });
     return extend.apply(extend, formatsArr);
+  }
+
+  /*
+    @evercoder-specific
+
+    Works just like getFormat(), but returns the union of formats
+    that includes also undefined values.
+   */
+  getComprehensiveFormat(index, length = 0) {
+    let lines = [], leaves = [];
+    if (length === 0) {
+      this.scroll.path(index).forEach(function(path) {
+        let [blot, ] = path;
+        if (blot instanceof Block) {
+          lines.push(blot);
+        } else if (blot instanceof Parchment.Leaf) {
+          leaves.push(blot);
+        }
+      });
+    } else {
+      lines = this.scroll.lines(index, length);
+      leaves = this.scroll.descendants(Parchment.Leaf, index, length);
+    }
+
+    let formats = lines.concat(leaves).map(bubbleFormats);
+    let allKeys = unique(flatten(formats.map(Object.keys)));
+
+    let ret = {};
+
+    allKeys.forEach(function(key) {
+      let values = unique(
+        formats.map(function(format) {
+          return format[key];
+        })
+      );
+      ret[key] = values.length <= 1 ? values[0] : values;
+    });
+
+    return ret;
   }
 
   getText(index, length) {
