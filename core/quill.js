@@ -231,6 +231,15 @@ class Quill {
     }
   }
 
+  getComprehensiveFormat(index = this.getSelection(true), length = 0) {
+    if (typeof index === 'number') {
+      return this.editor.getComprehensiveFormat(index, length);
+    } else {
+      return this.editor.getComprehensiveFormat(index.index, index.length);
+    }
+  }
+
+
   getIndex(blot) {
     return blot.offset(this.scroll);
   }

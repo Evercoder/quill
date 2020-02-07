@@ -169,21 +169,25 @@ class Editor {
       leaves = this.scroll.descendants(Parchment.Leaf, index, length);
     }
 
-    let formats = lines.concat(leaves).map(bubbleFormats);
-    let allKeys = unique(flatten(formats.map(Object.keys)));
+    let formatsArray = [lines, leaves].map(function(blots) {
+      let formats = blots.map(bubbleFormats);
+      let allKeys = unique(flatten(formats.map(Object.keys)));
 
-    let ret = {};
+      let ret = {};
 
-    allKeys.forEach(function(key) {
-      let values = unique(
-        formats.map(function(format) {
-          return format[key];
-        })
-      );
-      ret[key] = values.length <= 1 ? values[0] : values;
+      allKeys.forEach(function(key) {
+        let values = unique(
+          formats.map(function(format) {
+            return format[key];
+          })
+        );
+        ret[key] = values.length <= 1 ? values[0] : values;
+      });
+
+      return ret;
     });
 
-    return ret;
+    return extend.apply(extend, formatsArray);
   }
 
   getText(index, length) {

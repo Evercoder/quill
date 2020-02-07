@@ -398,6 +398,56 @@ describe('Editor', function() {
     });
   });
 
+  describe('getComprehensiveFormat()', function() {
+    it('unformatted', function() {
+      let editor = this.initialize(Editor, '<p>0123</p>');
+      expect(editor.getComprehensiveFormat(1)).toEqual({});
+    })
+
+    it('formatted', function() {
+      let editor = this.initialize(Editor, '<h1><em>0123</em></h1>');
+      expect(editor.getComprehensiveFormat(1)).toEqual({ header: 1, italic: true });
+    })
+
+    it('cursor', function() {
+      let editor = this.initialize(Editor, '<h1><strong><em>0123</em></strong></h1><h2><u>5678</u></h2>');
+      expect(editor.getComprehensiveFormat(2)).toEqual({ bold: true, italic: true, header: 1 });
+    });
+
+    it('cursor with preformat', function() {
+      let [editor, selection] = this.initialize([Editor, Selection], '<h1><strong><em>0123</em></strong></h1>');
+      selection.setRange(new Range(2));
+      selection.format('underline', true);
+      selection.format('color', 'red');
+      expect(editor.getComprehensiveFormat(2)).toEqual({ bold: true, italic: true, header: 1, color: 'red', underline: true });
+    });
+
+    it('across leaves', function() {
+      let editor = this.initialize(Editor, `
+        <h1>
+          <strong class="ql-size-small"><em>01</em></strong>
+          <em class="ql-size-large"><u>23</u></em>
+          <em class="ql-size-huge"><u>45</u></em>
+        </h1>
+      `);
+      expect(editor.getComprehensiveFormat(1, 4)).toEqual({
+        bold: [true, undefined],
+        underline: [undefined, true],
+        italic: true,
+        header: 1,
+        size: ['small', 'large', 'huge']
+      });
+    });
+
+    it('across lines', function() {
+      let editor = this.initialize(Editor, `
+        <h1 class="ql-align-right"><em>01</em></h1>
+        <h1 class="ql-align-center"><em>34</em></h1>
+      `);
+      expect(editor.getComprehensiveFormat(1, 3)).toEqual({ italic: true, header: 1, align: ['right', 'center'] });
+    });
+  });
+
   describe('getFormat()', function() {
     it('unformatted', function() {
       let editor = this.initialize(Editor, '<p>0123</p>');
@@ -442,3 +492,5 @@ describe('Editor', function() {
     });
   });
 });
+
+
