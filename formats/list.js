@@ -93,9 +93,9 @@ class List extends Container {
     if (blot.domNode.children.length) {
         const color = blot.domNode.children[0].style.color;
         const allChildrenHaveSameColor = [...blot.domNode.children]
-        // When removing list items there is an extra child which contains only a .ql-cursor div 
+        // When removing list items there is an extra child which contains only a .ql-cursor div
         // we need to filter that out so we can check if all children have the same color
-        .filter((node) => !node.querySelector('.ql-cursor')) 
+        .filter((node) => !node.querySelector('.ql-cursor'))
         .every(
           (child) => child.style.color === color
         );
