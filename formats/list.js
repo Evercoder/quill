@@ -2,6 +2,12 @@ import Parchment from 'parchment';
 import Block from '../blots/block';
 import Container from '../blots/container';
 
+const isEventInsideBoundingRect = (element, e) => {
+  let x = e.clientX; 
+  let y = e.clientY;
+  let r = element.getBoundingClientRect();
+  return x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
+}
 
 class ListItem extends Block {
   static formats(domNode) {
@@ -65,6 +71,17 @@ class List extends Container {
     super(domNode);
     const listEventHandler = (e) => {
       if (e.target.parentNode !== domNode) return;
+      /*
+        @evercoder-specific
+        
+        Check that the click event is registered outside
+        the target's bounding rect. This is an indirect
+        way to identify clicks on the :before CSS pseudo-element,
+        which is pulled out of the rect via negative margins.
+       */
+      if (isEventInsideBoundingRect(e.target, e)) {
+        return;
+      }
       let format = this.statics.formats(domNode);
       let blot = Parchment.find(e.target);
       if (format === 'checked') {
