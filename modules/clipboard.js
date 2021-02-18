@@ -57,12 +57,7 @@ class Clipboard extends Module {
       [Node.ELEMENT_NODE, mQmatchAttributor],
       [Node.ELEMENT_NODE, matchStyles],
       ['li', matchIndent],
-
-      /*
-          This bit has been commented out for @evercoder specifically,
-          as we have a FontWeight attributor rather than a Bold blot.
-       */
-      // ['b', matchAlias.bind(matchAlias, 'bold')],
+      ['b', matchAlias.bind(matchAlias, 'bold')],
       ['i', matchAlias.bind(matchAlias, 'italic')],
       ['style', matchIgnore]
     ].concat(this.options.matchers).forEach(([selector, matcher]) => {
@@ -371,19 +366,10 @@ function matchStyles(node, delta) {
   if (style.fontStyle && computeStyle(node).fontStyle === 'italic') {
     formats.italic = true;
   }
-
-  /*
-
-      This bit has been commented out for @evercoder specifically,
-      as we have a FontWeight attributor rather than a Bold blot.
-
-   */
-
-  // if (style.fontWeight && (computeStyle(node).fontWeight.startsWith('bold') ||
-  //                          parseInt(computeStyle(node).fontWeight) >= 700)) {
-  //   formats.bold = true;
-  // }
-
+  if (style.fontWeight && (computeStyle(node).fontWeight.startsWith('bold') ||
+                           parseInt(computeStyle(node).fontWeight) >= 700)) {
+    formats.bold = true;
+  }
   if (Object.keys(formats).length > 0) {
     delta = applyFormat(delta, formats);
   }
